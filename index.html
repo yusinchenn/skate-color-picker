@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>直排輪配色體驗</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f9f0f5;
+      overflow-x: hidden;
+    }
+    .color-selector {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+    }
+    .color-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      opacity: 0.5;
+      cursor: pointer;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .color-dot.active {
+      opacity: 1;
+      transform: scale(1.2);
+      border-color: #333;
+    }
+    .display-area {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      height: 350px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+    .display-area img {
+      position: absolute;
+      width: 60%;
+      height: auto;
+      transition: opacity 0.5s;
+    }
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .download-btn {
+      margin: 20px auto;
+      display: block;
+      padding: 10px 20px;
+      background: #d6336c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .display-area img {
+        width: 80%;
+      }
+    }
+
+    .display-area {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      height: 400px; /* 可依實際高度微調 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+    }
+
+    #upper-img {
+      position: absolute;
+      width: 27%;
+      top: 12%;
+      left:49%;
+      z-index: 10;
+      transition: opacity 0.5s;
+    }
+
+    #lower-img {
+      position: absolute;
+      width: 52%;
+      top: 20%; /* 視覺拼接位置，依圖片實際微調 */
+      z-index: 1;
+      transition: opacity 0.5s;
+    }
+
+  </style>
+</head>
+<body>
+
+<h3 style="text-align: center;">上鞋殼顏色</h3>
+<div class="color-selector" id="upper-colors"></div>
+
+<div class="display-area" id="display-area">
+  <img id="upper-img" src="images/upper/白.png" alt="上殼">
+  <img id="lower-img" src="images/lower/白色.png" alt="下殼">
+</div>
+
+<h3 style="text-align: center;">下鞋殼顏色</h3>
+<div class="color-selector" id="lower-colors"></div>
+
+<button class="download-btn" onclick="downloadImage()">下載配色圖片</button>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+const upperColors = ["深藍色", "橘色", "水藍色", "紅色"];
+const lowerColors = ["深藍色", "橘色", "水藍色", "紫色", "粉紅色"];
+
+const upperColorContainer = document.getElementById("upper-colors");
+const lowerColorContainer = document.getElementById("lower-colors");
+const upperImg = document.getElementById("upper-img");
+const lowerImg = document.getElementById("lower-img");
+
+let upperIndex = 1; // 白
+let lowerIndex = 4; // 白色
+
+function createColorDots(colors, container, isUpper) {
+  colors.forEach((color, index) => {
+    const dot = document.createElement("div");
+    dot.className = "color-dot";
+    dot.style.backgroundColor = getColorCode(color);
+    if (index === (isUpper ? upperIndex : lowerIndex)) dot.classList.add("active");
+    dot.addEventListener("click", () => {
+      [...container.children].forEach(d => d.classList.remove("active"));
+      dot.classList.add("active");
+      if (isUpper) {
+        upperIndex = index;
+        updateImage(true);
+      } else {
+        lowerIndex = index;
+        updateImage(false);
+      }
+    });
+    container.appendChild(dot);
+  });
+}
+
+function getColorCode(name) {
+  const colorMap = {
+    "深藍": "#0033cc", "橘": "#ff6600", "水藍": "#33ccff", "紅": "#cc0000", "白": "#ffffff",
+    "銀": "#cccccc", "綠": "#99cc00", "紫": "#990099", "粉": "#ff6699", "黃": "#ffdd00", "黑": "#333333",
+    "深藍色": "#0033cc", "橘色": "#ff6600", "水藍色": "#33ccff", "紅色": "#cc0000", "白色": "#ffffff",
+    "銀色": "#cccccc", "綠色": "#99cc00", "紫色": "#990099", "粉紅色": "#ff6699", "黃色": "#ffdd00", "黑色": "#333333"
+  };
+  return colorMap[name] || "#000";
+}
+
+function updateImage(isUpper) {
+  const img = isUpper ? upperImg : lowerImg;
+  const colors = isUpper ? upperColors : lowerColors;
+  const index = isUpper ? upperIndex : lowerIndex;
+  img.classList.add("hidden");
+  setTimeout(() => {
+    img.src = `images/${isUpper ? 'upper' : 'lower'}/${colors[index]}.png`;
+    img.classList.remove("hidden");
+  }, 200);
+
+  const container = isUpper ? upperColorContainer : lowerColorContainer;
+  [...container.children].forEach((dot, i) => {
+    dot.classList.toggle("active", i === index);
+  });
+}
+
+function handleSwipe(isUpper) {
+  return function(evt) {
+    const deltaX = evt.changedTouches[0].clientX - evt.target.startX;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX < 0) {
+        isUpper ? upperIndex++ : lowerIndex++;
+      } else {
+        isUpper ? upperIndex-- : lowerIndex--;
+      }
+      const len = isUpper ? upperColors.length : lowerColors.length;
+      if (isUpper) upperIndex = (upperIndex + len) % len;
+      else lowerIndex = (lowerIndex + len) % len;
+      updateImage(isUpper);
+    }
+  };
+}
+
+upperImg.addEventListener("touchstart", e => upperImg.startX = e.touches[0].clientX);
+lowerImg.addEventListener("touchstart", e => lowerImg.startX = e.touches[0].clientX);
+upperImg.addEventListener("touchend", handleSwipe(true));
+lowerImg.addEventListener("touchend", handleSwipe(false));
+
+function downloadImage() {
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const upper = new Image();
+  const lower = new Image();
+
+  upper.crossOrigin = "anonymous";
+  lower.crossOrigin = "anonymous";
+  upper.src = upperImg.src;
+  lower.src = lowerImg.src;
+
+  Promise.all([
+    new Promise((resolve) => { upper.onload = resolve; }),
+    new Promise((resolve) => { lower.onload = resolve; })
+  ]).then(() => {
+    const width = 600; // 固定寬度或 upper.naturalWidth
+    const height = 400; // 固定高度或 upper.naturalHeight + lower.naturalHeight
+
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.fillStyle = "#ffffff"; // 白底背景
+    ctx.fillRect(0, 0, width, height);
+
+    // 圖片位置要與 display-area 一致
+    ctx.drawImage(lower, width * 0.24, height * 0.20, width * 0.52, lower.naturalHeight * (width * 0.52 / lower.naturalWidth));
+    ctx.drawImage(upper, width * 0.49, height * 0.12, width * 0.27, upper.naturalHeight * (width * 0.27 / upper.naturalWidth));
+
+    const link = document.createElement("a");
+    link.download = "skate.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+}
+
+
+
+createColorDots(upperColors, upperColorContainer, true);
+createColorDots(lowerColors, lowerColorContainer, false);
+
+// 預設載入圖片顯示
+updateImage(true);
+updateImage(false);
+</script>
+</body>
+</html>
